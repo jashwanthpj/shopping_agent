@@ -3,3 +3,4 @@ pinecone==5.4.2
 psycopg2-binary==2.9.9
 sentence_transformers==3.3.1
 streamlit==1.40.2
+pip install python-dotenv
