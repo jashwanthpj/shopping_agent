@@ -132,8 +132,8 @@ def check_login_status():
 
 
 def redirect_to_login():
-    login_url = 'https://af98-115-114-88-222.ngrok-free.app'
-    redirect_url = f'{login_url}?next=https://shopping-agent-zyg6.onrender.com'
+    login_url = 'https://cc3a-115-114-88-222.ngrok-free.app'
+    redirect_url = f'{login_url}?next=https://348d-115-114-88-222.ngrok-free.app'
     st.markdown(f'<meta http-equiv="refresh" content="0; url={redirect_url}" />', unsafe_allow_html=True)
     st.stop()
 
@@ -206,11 +206,18 @@ def chatbot():
             st.session_state.show_wishlist = False
 
 
+    # Iterate through chat sessions
+    friendly_phrases = [
+    "Start a conversation! 💬",
+    "Let's get started! 😊",
+    "Ready to assist you! 🚀"
+    ]
+
     for index, (chat_name, chat_content) in enumerate(st.session_state.chat_sessions.items()):
         # Find the first user message or pick a random friendly phrase
         first_user_message = next(
             (message["content"] for message in chat_content if message["role"] == "user"),
-            "Let's get started! 😊"# Random friendly phrase
+            random.choice(friendly_phrases)  # Random friendly phrase
         )
         # Truncate long messages for better display
         display_name = first_user_message[:30] + "..." if len(first_user_message) > 30 else first_user_message
@@ -298,6 +305,14 @@ def chatbot():
             bot_answer = "I'm sorry, but I couldn't find any products matching your query."
 
         st.session_state.messages.append({"role": "assistant", "content": bot_answer, "image_urls": image_urls})
+
+        # with st.chat_message("assistant"):
+        #     st.write(bot_answer)
+        #     if image_urls:
+        #         cols = st.columns(len(image_urls))
+        #         for col, img_url in zip(cols, image_urls):
+        #             with col:
+        #                 st.image(img_url, caption='Product Image', use_container_width='auto')
 
         with st.chat_message("assistant"):
             st.write(bot_answer)
