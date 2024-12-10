@@ -206,18 +206,11 @@ def chatbot():
             st.session_state.show_wishlist = False
 
 
-    # Iterate through chat sessions
-    friendly_phrases = [
-    "Start a conversation! 💬",
-    "Let's get started! 😊",
-    "Ready to assist you! 🚀"
-    ]
-
     for index, (chat_name, chat_content) in enumerate(st.session_state.chat_sessions.items()):
         # Find the first user message or pick a random friendly phrase
         first_user_message = next(
             (message["content"] for message in chat_content if message["role"] == "user"),
-            random.choice(friendly_phrases)  # Random friendly phrase
+            "Let's get started! 😊"# Random friendly phrase
         )
         # Truncate long messages for better display
         display_name = first_user_message[:30] + "..." if len(first_user_message) > 30 else first_user_message
@@ -255,7 +248,7 @@ def chatbot():
         # username = st.query_params.get("user", "User")
         st.session_state.messages.append({
             "role": "assistant", 
-            "content": f"Hello {username}! 👋 Welcome to Smart Shopping AI Agent. How can I assist you today?", 
+            "content": f"Hello! 👋 Welcome to Smart Shopping AI Agent. How can I assist you today?", 
             "image_urls": []
         })
 
@@ -306,14 +299,6 @@ def chatbot():
 
         st.session_state.messages.append({"role": "assistant", "content": bot_answer, "image_urls": image_urls})
 
-        # with st.chat_message("assistant"):
-        #     st.write(bot_answer)
-        #     if image_urls:
-        #         cols = st.columns(len(image_urls))
-        #         for col, img_url in zip(cols, image_urls):
-        #             with col:
-        #                 st.image(img_url, caption='Product Image', use_container_width='auto')
-
         with st.chat_message("assistant"):
             st.write(bot_answer)
             if image_urls:
@@ -330,35 +315,13 @@ def chatbot():
                                 wishlist_products["products"].append(img_url)
                                 update_wishlist_to_db(wishlist_products,userid)
 
-        
-
 
     update_sessions_to_db(st.session_state.chat_sessions, userid)
-    # st.rerun()
-    # chatbot()
-        # print(st.session_state)
-        # print(type(st.session_state))
 
 def logout_session():
     st.query_params.clear() 
-    if not check_user_in_db(userid):
-        add_user_to_db(userid)
-
-# st.markdown(
-#     """
-#     <style>
-#     .top-right-button {
-#         position: fixed;
-#         top: 20px;
-#         right: 200px;
-#         z-index: 100;
-#     }
-#     </style>
-#     """, unsafe_allow_html=True
-# )
-
-# Button in the top-right corner
-
+    if not check_login_status():
+        redirect_to_login()
 
 
 if __name__ == "__main__":
