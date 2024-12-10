@@ -21,7 +21,7 @@ def build_suggestions_json(user_query, context):
     
 
     client = OpenAI()
-    OpenAI.api_key = os.getenv('api_key')
+    OpenAI.api_key = os.getenv('OPENAI_API_KEY')
     # ------------------------------------------------------------------------------------------
     prompt_for_query = f"""
             Given the previous list of user queries and the current query, combine them to generate the exact query the user is making.
