@@ -133,7 +133,7 @@ def check_login_status():
 
 def redirect_to_login():
     login_url = 'https://cc3a-115-114-88-222.ngrok-free.app'
-    redirect_url = f'{login_url}?next=https://348d-115-114-88-222.ngrok-free.app'
+    redirect_url = f'{login_url}?next=https://shopping-agent-zyg6.onrender.com'
     st.markdown(f'<meta http-equiv="refresh" content="0; url={redirect_url}" />', unsafe_allow_html=True)
     st.stop()
 
@@ -147,13 +147,16 @@ def chatbot():
     if not check_user_in_db(userid):
         add_user_to_db(userid)
 
-    conn = connect_db("cockroach")
-    cursor = conn.cursor()
-    cursor.execute("SELECT username FROM users_login WHERE id = %s",(userid,))
-    mail_id = cursor.fetchone()[0]
-    username = mail_id.split("@")[0]
-
+    # conn = connect_db("cockroach")
+    # cursor = conn.cursor()
+    # cursor.execute("SELECT username FROM users_login WHERE id = %s",(userid,))
+    # mail_id = cursor.fetchone()[0]
+    # username = mail_id.split("@")[0]
+    
     # Initialize session state for chats if not done already
+
+    username = "User"
+    
     if 'chat_sessions' not in st.session_state:
         st.session_state.chat_sessions = fetch_sessions_from_db(userid) or {}
         
