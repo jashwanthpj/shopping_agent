@@ -12,7 +12,7 @@ user = "postgres"
 password = ""
 host = "localhost"
 
-# COCKROACH_DB_URL = "postgresql://gowtham:nQ5kXObwIbnmDRrGJUTcXQ@ruddy-gerbil-5910.j77.aws-ap-south-1.cockroachlabs.cloud:26257/defaultdb?sslmode=verify-full"
+COCKROACH_DB_URL = "postgresql://gowtham:nQ5kXObwIbnmDRrGJUTcXQ@ruddy-gerbil-5910.j77.aws-ap-south-1.cockroachlabs.cloud:26257/defaultdb?sslmode=require"
 NEON_DB_URL = "postgresql://shopping_chatbot_owner:pON7LcahuDS8@ep-shiny-meadow-a571h2da.us-east-2.aws.neon.tech/shopping_chatbot?sslmode=require"
 
 def connect_db(db_type):
@@ -22,16 +22,16 @@ def connect_db(db_type):
         elif db_type == "cockroach":
             if not COCKROACH_DB_URL:
                 raise ValueError("CockroachDB URL is not set in the environment variables.")
-            # conn = psycopg2.connect(COCKROACH_DB_URL)
-            conn = psycopg2.connect(
-                    dbname="defaultdb",
-                    user="gowtham",
-                    password="nQ5kXObwIbnmDRrGJUTcXQ",
-                    host="ruddy-gerbil-5910.j77.aws-ap-south-1.cockroachlabs.cloud",
-                    port=26257,
-                    sslmode="verify-full",
-                    sslrootcert="system"
-                )
+            conn = psycopg2.connect(COCKROACH_DB_URL)
+            # conn = psycopg2.connect(
+            #         dbname="defaultdb",
+            #         user="gowtham",
+            #         password="nQ5kXObwIbnmDRrGJUTcXQ",
+            #         host="ruddy-gerbil-5910.j77.aws-ap-south-1.cockroachlabs.cloud",
+            #         port=26257,
+            #         sslmode="verify-full",
+            #         sslrootcert="system"
+            #     )
         else:
             raise ValueError("Invalid database type specified.")
         
@@ -132,7 +132,7 @@ def check_login_status():
 
 
 def redirect_to_login():
-    login_url = 'https://cc3a-115-114-88-222.ngrok-free.app'
+    login_url = 'https://af98-115-114-88-222.ngrok-free.app'
     redirect_url = f'{login_url}?next=https://shopping-agent-zyg6.onrender.com'
     st.markdown(f'<meta http-equiv="refresh" content="0; url={redirect_url}" />', unsafe_allow_html=True)
     st.stop()
@@ -175,6 +175,9 @@ def chatbot():
         # fetch_wishlist_from_db(userid)
         st.session_state.show_wishlist = True
 
+    if st.button('Log out', key="logout_button"):
+        logout_session()
+        
     # Simulated popup for wishlist
     if st.session_state.get('show_wishlist', False):
         st.subheader(f"{username}'s Wishlist")
@@ -338,6 +341,8 @@ def chatbot():
 
 def logout_session():
     st.query_params.clear() 
+    if not check_user_in_db(userid):
+        add_user_to_db(userid)
 
 # st.markdown(
 #     """
