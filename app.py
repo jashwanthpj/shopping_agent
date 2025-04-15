@@ -6,14 +6,15 @@ from datetime import datetime
 import psycopg2
 import json
 import random
+import os
+from dotenv import load_dotenv
 
-dbname = "shopping_chatbot"
-user = "postgres"
-password = ""
-host = "localhost"
+# Load environment variables from .env file
+load_dotenv()
 
-COCKROACH_DB_URL = "postgresql://gowtham:nQ5kXObwIbnmDRrGJUTcXQ@ruddy-gerbil-5910.j77.aws-ap-south-1.cockroachlabs.cloud:26257/defaultdb?sslmode=require"
-NEON_DB_URL = "postgresql://shopping_chatbot_owner:pON7LcahuDS8@ep-shiny-meadow-a571h2da.us-east-2.aws.neon.tech/shopping_chatbot?sslmode=require"
+# Use environment variables for database credentials
+NEON_DB_URL = os.getenv("NEON_DB_URL")
+COCKROACH_DB_URL = os.getenv("COCKROACH_DB_URL")
 
 def connect_db(db_type):
     try:
@@ -23,15 +24,6 @@ def connect_db(db_type):
             if not COCKROACH_DB_URL:
                 raise ValueError("CockroachDB URL is not set in the environment variables.")
             conn = psycopg2.connect(COCKROACH_DB_URL)
-            # conn = psycopg2.connect(
-            #         dbname="defaultdb",
-            #         user="gowtham",
-            #         password="nQ5kXObwIbnmDRrGJUTcXQ",
-            #         host="ruddy-gerbil-5910.j77.aws-ap-south-1.cockroachlabs.cloud",
-            #         port=26257,
-            #         sslmode="verify-full",
-            #         sslrootcert="system"
-            #     )
         else:
             raise ValueError("Invalid database type specified.")
         
@@ -105,6 +97,7 @@ def check_user_in_db(userid):
     
 
 def add_user_to_db(userid):
+    print("hi")
     with connect_db("local") as conn:
         cursor = conn.cursor()
         cursor.execute(
@@ -112,6 +105,7 @@ def add_user_to_db(userid):
             (userid,)
         )
         conn.commit()
+        print("done")
 
         wishlist = {"products":[]}
         cursor.execute(
@@ -124,7 +118,7 @@ def add_user_to_db(userid):
 def check_login_status():
     try:
         query_params = st.query_params
-        if query_params.get("logged_in") == "True":
+        if query_params.get("logged_in") == "True" and query_params.get("user_id"):
             return True
     except Exception as e:
         print(f"Error checking login status: {e}")
@@ -132,18 +126,28 @@ def check_login_status():
 
 
 def redirect_to_login():
-    login_url = 'https://cc3a-115-114-88-222.ngrok-free.app'
-    redirect_url = f'{login_url}?next=https://348d-115-114-88-222.ngrok-free.app'
+    login_url = os.getenv("LOGIN_URL")
+    chatbot_url = os.getenv("REDIRECT_URL")
+    redirect_url = f'{login_url}?next={chatbot_url}'
     st.markdown(f'<meta http-equiv="refresh" content="0; url={redirect_url}" />', unsafe_allow_html=True)
-    st.stop()
+    st.write("Redirecting to login page...")
+    # Don't call st.stop() here as it completely halts execution
+    # Instead, return from the function so we can handle login parameters after redirect
 
 def chatbot():
     if not check_login_status():
         redirect_to_login()
+        
 
     userid = int(st.query_params.get("user_id"))
-    # st.query_params.from_dict({"logged_in":"True"})
-
+    
+    # Set logged_in and user_id parameters in a single update
+    st.query_params.from_dict({
+        "logged_in": "True",
+        "user_id": str(userid)
+    })
+    
+    # Check if user exists in DB
     if not check_user_in_db(userid):
         add_user_to_db(userid)
 
@@ -152,7 +156,6 @@ def chatbot():
     # cursor.execute("SELECT username FROM users_login WHERE id = %s",(userid,))
     # mail_id = cursor.fetchone()[0]
     # username = mail_id.split("@")[0]
-    
     # Initialize session state for chats if not done already
 
     username = "User"
@@ -175,12 +178,13 @@ def chatbot():
         # fetch_wishlist_from_db(userid)
         st.session_state.show_wishlist = True
 
-    if st.button('Log out', key="logout_button"):
+    if st.button('logout', key="logout_button"):
         logout_session()
         
+
     # Simulated popup for wishlist
     if st.session_state.get('show_wishlist', False):
-        st.subheader(f"{username}'s Wishlist")
+        st.subheader(f"Wishlist")
         wishlist_data = fetch_wishlist_from_db(userid)  # Get the data
         
         if "products" in wishlist_data and wishlist_data["products"]:
@@ -286,23 +290,26 @@ def chatbot():
     if prompt:
         # Collect historical context from previous messages
         context = [msg['content'] for msg in st.session_state.messages if msg['role'] == 'user']
-        context_text = " ".join(context)
-
+        
         with st.chat_message("user"):
             st.write(prompt)
 
+        # Add user message to session state
         st.session_state.messages.append({"role": "user", "content": prompt})
 
         with st.spinner("Generating response...."):
-            LLM_response = build_suggestions_json(prompt, context_text)
+            LLM_response = build_suggestions_json(prompt, context)
 
         image_urls = []
-        if LLM_response:
+        if LLM_response and 'results' in LLM_response and LLM_response['results']:  # Check if results exist and not empty
             bot_answer = "These are the products retrieved as per your query!"
             for item in LLM_response['results']:
-                image_urls.append(item['product_url'])
+                if 'product_url' in item:  # Add safety check
+                    image_urls.append(item['product_url'])
         else:
-            bot_answer = "I'm sorry, but I couldn't find any products matching your query."
+            # Use the fallback response if available, otherwise use default message
+            bot_answer = LLM_response.get('fallback_response')
+            image_urls = []  # Ensure image_urls is empty
 
         st.session_state.messages.append({"role": "assistant", "content": bot_answer, "image_urls": image_urls})
 
@@ -337,6 +344,22 @@ def logout_session():
     st.query_params.clear() 
     if not check_login_status():
         redirect_to_login()
+
+# st.markdown(
+#     """
+#     <style>
+#     .top-right-button {
+#         position: fixed;
+#         top: 20px;
+#         right: 200px;
+#         z-index: 100;
+#     }
+#     </style>
+#     """, unsafe_allow_html=True
+# )
+
+# Button in the top-right corner
+
 
 
 if __name__ == "__main__":

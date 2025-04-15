@@ -1,6 +1,8 @@
 from pinecone import Pinecone
 import psycopg2
 from sentence_transformers import SentenceTransformer
+import os
+from dotenv import load_dotenv
 
 # model = SentenceTransformer('all-MiniLM-L6-v2')
 model = SentenceTransformer('all-mpnet-base-v2')
@@ -52,8 +54,12 @@ for vector in embeddings:
 
 print("completed with the vector conversions")
 
+# Get Pinecone API key from environment variable
+pinecone_api_key = os.getenv("PINECONE_API_KEY")
+if not pinecone_api_key:
+    raise ValueError("Pinecone API key is not set in environment variables")
 
-pc = Pinecone(api_key="pcsk_6zDjF8_CGveaQt9SV6zkJZKCqwnRQ67PxRqD8z9gWrqYvpcounvgpWWmp6NkZmKDBbLoHJ")
+pc = Pinecone(api_key=pinecone_api_key)
 index = pc.Index("shopping-chatbot")
 
 def chunk_list(data, chunk_size):
